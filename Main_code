@@ -1,0 +1,89 @@
+//Using AS5600 position sensor to track rotation of stepper motor
+//returns the degrees roated by stepper motor
+
+#include <Wire.h> //i2C transmission
+
+//magnet status
+int magnetStatus = 0; 
+
+int lowbyte; //stores intital reading 
+int rawAngle; //rawe angle reading
+float degAngle; //calculated angle in degrees
+
+
+void setup()
+{
+  Serial.begin(9600); 
+  Wire.begin(); //start i2C  
+	Wire.setClock(400000); //fast clock s
+
+   //call function to check magnet
+  //wont begin until magnet is detected
+  checkMagnetPresence(); 
+
+  ReadRawAngle(); //get the raw angle of the stepper motor
+  startAngle = degAngle; //update startAngle with degAngle - for taring
+
+  
+}
+
+void loop()
+{    
+    ReadRawAngle(); //ask the value from the sensor
+    correctAngle(); //tare the value
+
+}
+
+
+
+void ReadRawAngle()
+{ 
+
+  Wire.beginTransmission(0x36); //connect to the sensor
+  highbyte = Wire.read(); //store value in highbyte
+  rawAngle = highbyte | lowbyte; //store value in rawAngle
+
+   //calculate degree of angle
+  degAngle = rawAngle * 0.087890625; 
+  
+  //Serial.print("Deg angle: ");
+  //Serial.println(degAngle, 2); //absolute position of the encoder within the 0-360 circle
+  
+}
+
+
+
+void correctAngle()
+{
+  //calibrate angle form raw data
+  correctedAngle = degAngle - startAngle; //set to zero
+
+  if(correctedAngle < 0) //normalize a negative angle
+  {
+  correctedAngle = correctedAngle + 360; 
+  }
+  else
+  {
+    //return nothing
+  }
+}
+
+
+
+
+
+void checkMagnetPresence()
+{  
+
+  while(magnetStatus != 0) //once magnet is detected
+  {
+    magnetStatus = 0; //reset reading
+
+    Wire.beginTransmission(0x36); //connect to the sensor
+    magnetStatus = Wire.read(); //store the location of the magnet 
+
+  }      
+  
+}
+
+
